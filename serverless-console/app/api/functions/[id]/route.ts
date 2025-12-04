@@ -1,13 +1,34 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { removeById, getStore } from "../store";
 
+type ContextParams = { params: Promise<{ id: string }> };
+
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: ContextParams,
 ) {
-  const id = (params.id ?? "").trim();
+  const { id: rawId } = await params;
+  const id = (rawId ?? "").trim();
   const store = getStore();
-  const fn = store.find((f) => f.functionId === id);
+  let fn = store.find((f) => f.functionId === id);
+
+  // If not found, seed a mock on-the-fly so overview always has data.
+  if (!fn && id) {
+    const now = new Date().toISOString();
+    fn = {
+      functionId: id,
+      name: `mock_function_${id}`,
+      runtime: "node18",
+      latestVersion: 1,
+      code: `exports.handler = async (event) => {
+  const name = event?.name ?? "world";
+  return { message: "Hello ${name}" };
+};`,
+      createdAt: now,
+      updatedAt: now,
+    };
+    store.push(fn);
+  }
   if (!fn) {
     return NextResponse.json(
       { success: false, error: { code: "NOT_FOUND", message: "Function not found" } },
@@ -101,9 +122,10 @@ export async function GET(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: ContextParams,
 ) {
-  const id = (params.id ?? "").trim();
+  const { id: rawId } = await params;
+  const id = (rawId ?? "").trim();
 
   const deleted = removeById(id);
   return NextResponse.json({ success: true, data: { deleted } });

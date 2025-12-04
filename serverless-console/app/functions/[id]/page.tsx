@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { getFunctionDetail, deleteFunction } from "@/lib/api";
 import type { FunctionDetail, ExecutionRow } from "@/lib/types";
@@ -31,7 +32,6 @@ export default function FunctionDetailPage() {
   const [detail, setDetail] = useState<FunctionDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showCode, setShowCode] = useState(true);
   const [editedCode, setEditedCode] = useState<string>("");
   const [invokeInput, setInvokeInput] = useState('{\n  "name": "demo"\n}');
   const [invokeResult, setInvokeResult] = useState<string | null>(null);
@@ -90,27 +90,35 @@ export default function FunctionDetailPage() {
       <header className="bg-[var(--primary)] text-white shadow-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/15"
               onClick={() => router.push("/")}
+              className="rounded-full bg-white/15 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/25"
             >
               ←
-            </Button>
+            </button>
             <div className="rounded-md bg-white/15 px-3 py-2 text-sm font-semibold uppercase tracking-wide">
               SERVERLESS
             </div>
             <span className="text-sm">Functions Console</span>
           </div>
-          <div className="text-xs opacity-85">SoftBank Hackathon · Prod</div>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/25"
+            >
+              <span aria-hidden="true">▦</span>
+              Dashboard
+            </Link>
+            <span className="text-xs opacity-85">Dashboard · Grafana Style</span>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-6">
         <div className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3">
-          <h1 className="text-lg font-semibold text-emerald-700">Function Overview</h1>
+          <h1 className="text-lg font-semibold text-[var(--foreground)]">함수 개요</h1>
+          <p className="text-sm text-[var(--muted-foreground)]">함수의 생성·수정·실행 기록·메트릭을 관리합니다.</p>
         </div>
 
         <Card className="p-6">
@@ -177,17 +185,15 @@ export default function FunctionDetailPage() {
                 {isDirty ? "Save & Deploy New Version" : "No Changes"}
               </Button>
             </div>
-            {showCode && (
-              <CodeEditor
-                value={
-                  editedCode ||
-                  detail?.code ||
-                  `exports.handler = async (event) => {\n  // Your code here\n  return {\n    statusCode: 200,\n    body: JSON.stringify({ message: "Hello from Node.js!" })\n  };\n};`
-                }
-                onChange={setEditedCode}
-                readOnly={false}
-              />
-            )}
+            <CodeEditor
+              value={
+                editedCode ||
+                detail?.code ||
+                `exports.handler = async (event) => {\n  // Your code here\n  return {\n    statusCode: 200,\n    body: JSON.stringify({ message: "Hello from Node.js!" })\n  };\n};`
+              }
+              onChange={setEditedCode}
+              readOnly={false}
+            />
           </Card>
         )}
 
