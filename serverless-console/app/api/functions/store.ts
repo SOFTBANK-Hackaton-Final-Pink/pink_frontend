@@ -22,7 +22,7 @@ function ensureState() {
       {
         functionId: "1",
         name: "hello_function",
-        runtime: "node18",
+        runtime: "node:18-alpine",
         latestVersion: 1,
         code: `exports.handler = async (event) => {
   const name = event?.name ?? "world";
@@ -34,7 +34,7 @@ function ensureState() {
       {
         functionId: "2",
         name: "image-resize",
-        runtime: "python3.10",
+        runtime: "python:3.9-alpine",
         latestVersion: 2,
         code: `def handler(event):
     url = event.get("url")
@@ -45,7 +45,7 @@ function ensureState() {
       {
         functionId: "3",
         name: "data-validator",
-        runtime: "python3.11",
+        runtime: "python:3.9-alpine",
         latestVersion: 3,
         code: `def handler(event):
     return {"valid": True, "input": event}`,

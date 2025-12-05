@@ -12,7 +12,7 @@ type Props = {
   onSubmit: (payload: CreateFunctionPayload) => Promise<void> | void;
 };
 
-const RUNTIMES = ["node18", "python3.10", "python3.11"];
+const RUNTIMES = ["python:3.9-alpine", "node:18-alpine"];
 const DEFAULT_CODE = `exports.handler = async (event) => {
   // TODO: add your logic
   const name = event?.name ?? "world";
@@ -36,7 +36,7 @@ export default function FunctionForm({ onSubmit }: Props) {
       setName("");
       setCode(DEFAULT_CODE);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "생성에 실패했습니다");
+      setError(err instanceof Error ? err.message : "요청을 처리하지 못했습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -110,7 +110,7 @@ export default function FunctionForm({ onSubmit }: Props) {
 
       <div className="flex justify-start">
         <Button type="submit" disabled={submitting} variant="primary">
-          {submitting ? "생성 중.." : "생성"}
+          {submitting ? "생성 중..." : "생성"}
         </Button>
       </div>
     </form>

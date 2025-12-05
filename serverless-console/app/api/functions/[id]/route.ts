@@ -18,7 +18,7 @@ export async function GET(
     fn = {
       functionId: id,
       name: `mock_function_${id}`,
-      runtime: "node18",
+      runtime: "node:18-alpine",
       latestVersion: 1,
       code: `exports.handler = async (event) => {
   const name = event?.name ?? "world";

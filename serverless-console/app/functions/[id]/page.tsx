@@ -45,7 +45,7 @@ export default function FunctionDetailPage() {
       setDetail(data);
       setEditedCode(data.code ?? "");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "불러오기 오류가 발생했습니다");
+      setError(err instanceof Error ? err.message : "불러오기 중 오류가 발생했습니다.");
       setDetail(null);
     } finally {
       setLoading(false);
@@ -94,6 +94,7 @@ export default function FunctionDetailPage() {
               type="button"
               onClick={() => router.push("/")}
               className="rounded-full bg-white/15 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/25"
+              aria-label="메인으로 돌아가기"
             >
               ←
             </button>
@@ -201,7 +202,7 @@ export default function FunctionDetailPage() {
           <Card className="p-6">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-semibold">실행</h3>
-              <span className="text-xs text-[var(--muted-foreground)]">JSON 입력을 넣고 실행합니다.</span>
+              <span className="text-xs text-[var(--muted-foreground)]">JSON 입력을 넣고 실행해보세요.</span>
             </div>
             <div className="flex flex-col gap-3">
               <Textarea
@@ -242,7 +243,7 @@ export default function FunctionDetailPage() {
                       <th className="pb-2 pr-3">실행 시간</th>
                       <th className="pb-2 pr-3">CPU %</th>
                       <th className="pb-2 pr-3">메모리(MB)</th>
-                      <th className="pb-2 pr-3">생성 시각</th>
+                      <th className="pb-2 pr-3">실행 시각</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border)]">
@@ -272,7 +273,7 @@ export default function FunctionDetailPage() {
           <Card className="p-6">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-semibold">메트릭</h3>
-              <span className="text-xs text-[var(--muted-foreground)]">기본 실행 지표를 요약합니다.</span>
+              <span className="text-xs text-[var(--muted-foreground)]">기본 실행 지표를 확인하세요.</span>
             </div>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
               <Card className="p-4">
