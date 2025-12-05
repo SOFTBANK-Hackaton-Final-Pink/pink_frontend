@@ -49,7 +49,7 @@ export default function DashboardPage() {
   const [range, setRange] = useState<TimeRange>("1h");
   const [snapshot, setSnapshot] = useState<MetricSnapshot>(() => generateSnapshot("1h"));
   const [series, setSeries] = useState<SeriesPoint[]>(() => generateSeries("1h"));
-  const [runtimeSplit, setRuntimeSplit] = useState({ node: 33, python: 33, go: 34 });
+  const [runtimeSplit, setRuntimeSplit] = useState({ node: 50, python: 50 });
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const handleBack = () => {
@@ -63,11 +63,9 @@ export default function DashboardPage() {
   useEffect(() => {
     setSnapshot(generateSnapshot(range));
     setSeries(generateSeries(range));
-    setRuntimeSplit({
-      node: Math.floor(20 + Math.random() * 50),
-      python: Math.floor(20 + Math.random() * 50),
-      go: Math.floor(20 + Math.random() * 50),
-    });
+    const node = Math.floor(40 + Math.random() * 20);
+    const python = 100 - node;
+    setRuntimeSplit({ node, python });
     setLastUpdated(new Date());
   }, [range]);
 
@@ -81,11 +79,10 @@ export default function DashboardPage() {
   }, [range]);
 
   const runtimeGradient = useMemo(() => {
-    const total = runtimeSplit.node + runtimeSplit.python + runtimeSplit.go;
+    const total = runtimeSplit.node + runtimeSplit.python || 1;
     const n = (runtimeSplit.node / total) * 100;
-    const p = (runtimeSplit.python / total) * 100;
-    const g = 100 - n - p;
-    return `conic-gradient(#60a5fa 0 ${n}%, #22c55e ${n}% ${n + p}%, #f59e0b ${n + p}% 100%)`;
+    const p = 100 - n;
+    return `conic-gradient(#60a5fa 0 ${n}%, #22c55e ${n}% 100%)`;
   }, [runtimeSplit]);
 
   return (
@@ -201,17 +198,16 @@ export default function DashboardPage() {
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">Runtime Distribution</h3>
-              <span className="text-xs text-slate-400">Node / Python / Go</span>
+              <span className="text-xs text-slate-400">node:18-alpine / python:3.9-alpine</span>
             </div>
             <div className="flex flex-col items-center gap-3">
               <div
                 className="h-48 w-48 rounded-full border border-slate-800 shadow-inner"
                 style={{ background: runtimeGradient }}
               />
-              <div className="grid w-full grid-cols-3 gap-2 text-xs text-slate-300">
-                <Legend label="Node.js" value={runtimeSplit.node} color="#60a5fa" />
-                <Legend label="Python" value={runtimeSplit.python} color="#22c55e" />
-                <Legend label="Go" value={runtimeSplit.go} color="#f59e0b" />
+              <div className="grid w-full grid-cols-2 gap-2 text-xs text-slate-300">
+                <Legend label="node:18-alpine" value={runtimeSplit.node} color="#60a5fa" />
+                <Legend label="python:3.9-alpine" value={runtimeSplit.python} color="#22c55e" />
               </div>
             </div>
           </div>
