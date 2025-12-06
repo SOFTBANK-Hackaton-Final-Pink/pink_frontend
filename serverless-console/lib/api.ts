@@ -26,7 +26,8 @@ export async function listFunctions(
   const query = new URLSearchParams();
   if (params.cursor) query.set("cursor", params.cursor);
 
-  const res = await fetch(`${API_BASE}/functions?${query.toString()}`, {
+  const qs = query.toString();
+  const res = await fetch(`${API_BASE}/functions${qs ? `?${qs}` : ""}`, {
     cache: "no-store",
   });
 
@@ -91,9 +92,8 @@ export async function getFunctionDetail(
 ): Promise<FunctionDetail> {
   const id = String(functionId ?? "").trim();
   if (!id) throw new Error("Invalid function id");
-  const query = new URLSearchParams();
-  if (cursor) query.set("cursor", cursor);
-  const res = await fetch(`${API_BASE}/functions/${id}?${query.toString()}`, {
+  const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  const res = await fetch(`${API_BASE}/functions/${id}${qs}`, {
     cache: "no-store",
   });
   const json = await handleJson<{
