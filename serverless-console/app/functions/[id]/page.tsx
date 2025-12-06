@@ -86,7 +86,13 @@ export default function FunctionDetailPage() {
   }, [detail?.executions]);
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+    <div className="relative min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      {loading && (
+        <div className="overlay-loader">
+          <div className="spinner" />
+          <div className="text-sm text-white">로딩 중...</div>
+        </div>
+      )}
       <header className="bg-[var(--primary)] text-white shadow-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -108,7 +114,7 @@ export default function FunctionDetailPage() {
               href="/dashboard"
               className="flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/25"
             >
-              <span aria-hidden="true">▦</span>
+              <span aria-hidden="true">📊</span>
               Dashboard
             </Link>
             <span className="text-xs opacity-85">Dashboard · Grafana Style</span>

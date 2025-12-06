@@ -9,7 +9,8 @@ import type {
 
 export type { ListFunctionsParams, CreateFunctionPayload, FunctionDetail } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+// 기본값을 실제 배포된 API 서버로 지정 (환경변수로 덮어쓰기 가능)
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://52.78.40.174/api";
 
 const handleJson = async <T>(res: Response) => {
   if (!res.ok) {
