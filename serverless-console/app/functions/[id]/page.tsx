@@ -45,6 +45,11 @@ export default function FunctionDetailPage() {
   const [execCursor, setExecCursor] = useState<string | null>(null);
   const [execNextCursor, setExecNextCursor] = useState<string | null>(null);
   const [savingCode, setSavingCode] = useState(false);
+  const refreshExecutions = async () => {
+    setExecCursor(null);
+    setExecNextCursor(null);
+    await fetchDetail();
+  };
 
   const fetchDetail = async () => {
     setLoading(true);
@@ -80,9 +85,7 @@ export default function FunctionDetailPage() {
       const res = await invokeFunction(params.id);
       setInvokeResult(`executionId: ${res.data.executionId}, status: ${res.data.status}`);
       // reload executions from first page
-      setExecCursor(null);
-      setExecNextCursor(null);
-      await fetchDetail();
+      await refreshExecutions();
     } catch (err) {
       setInvokeResult(err instanceof Error ? err.message : "실행 요청 실패");
     }
@@ -251,9 +254,6 @@ export default function FunctionDetailPage() {
                 <Button variant="primary" onClick={handleInvoke}>
                   실행
                 </Button>
-                <Button variant="secondary" onClick={fetchDetail} disabled={loading}>
-                  새로고침
-                </Button>
               </div>
               {invokeResult && (
                 <div className="rounded-md border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-sm text-[var(--foreground)]">
@@ -268,7 +268,12 @@ export default function FunctionDetailPage() {
           <Card className="p-6">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-semibold">실행 기록</h3>
-              <span className="text-xs text-[var(--muted-foreground)]">최신 순으로 정렬됩니다.</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[var(--muted-foreground)]">최신 순으로 정렬됩니다.</span>
+                <Button variant="secondary" size="sm" onClick={refreshExecutions} disabled={loading}>
+                  새로고침
+                </Button>
+              </div>
             </div>
             {detail?.executions?.length ? (
               <>
