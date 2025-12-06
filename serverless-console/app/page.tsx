@@ -75,7 +75,7 @@ export default function HomePage() {
 
       <header className="mb-4 rounded-[20px] bg-gradient-to-r from-[#ff6b9d] to-[#ff9f9f] px-5 py-3 shadow-lg text-white flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">SERVERLESS</div>
+          <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Pink</div>
           <span className="text-sm">Functions Console</span>
         </div>
       </header>
@@ -104,7 +104,7 @@ export default function HomePage() {
                 <p className="text-xs text-[var(--muted-foreground)]">맛있는 함수 도시락을 만들어보세요</p>
               </div>
             </div>
-            <span className="text-xs text-[var(--muted-foreground)]">POST /api/functions</span>
+            
           </div>
           <FunctionForm onSubmit={handleCreate} />
         </Card>
