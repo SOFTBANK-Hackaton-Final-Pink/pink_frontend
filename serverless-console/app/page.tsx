@@ -13,8 +13,9 @@ const PAGE_SIZE = 10;
 
 export default function HomePage() {
   const [functions, setFunctions] = useState<FunctionListItem[]>([]);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [cursorStack, setCursorStack] = useState<(string | null)[]>([null]); // visited cursors
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const page = cursorStack.length;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,8 +25,7 @@ export default function HomePage() {
       setError(null);
       const res = await listFunctions(params);
       setFunctions(res.items);
-      setTotal(res.total ?? res.items.length);
-      setPage(res.page ?? 1);
+      setNextCursor(res.nextCursor ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
@@ -39,15 +39,29 @@ export default function HomePage() {
 
   const handleCreate = async (payload: { name: string; runtime: string; code: string }) => {
     await createFunction(payload);
-    await loadFunctions({});
+    // 새로고침 (현 페이지 기준)
+    await loadFunctions({ cursor: cursorStack[cursorStack.length - 1] ?? undefined });
   };
-
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const handleDeleted = async (id: string) => {
     setFunctions((prev) => prev.filter((fn) => fn.functionId !== id));
-    setTotal((prev) => Math.max(0, prev - 1));
-    await loadFunctions({});
+    await loadFunctions({ cursor: cursorStack[cursorStack.length - 1] ?? undefined });
+  };
+
+  const handleNext = async () => {
+    if (!nextCursor) return;
+    const currentCursor = cursorStack[cursorStack.length - 1] ?? null;
+    setCursorStack((prev) => [...prev, nextCursor]);
+    await loadFunctions({ cursor: nextCursor });
+  };
+
+  const handlePrev = async () => {
+    if (cursorStack.length <= 1) return;
+    const newStack = [...cursorStack];
+    newStack.pop();
+    const prevCursor = newStack[newStack.length - 1];
+    setCursorStack(newStack);
+    await loadFunctions({ cursor: prevCursor ?? undefined });
   };
 
   return (
@@ -104,7 +118,7 @@ export default function HomePage() {
         <Card className="p-6">
           <div className="mb-4 flex items-center justify-between">
             <span className="text-xs text-[var(--muted-foreground)]">
-              Page {page} / {Math.max(1, totalPages)}
+              Page {page}
             </span>
             {error && (
               <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -117,16 +131,16 @@ export default function HomePage() {
             <Button
               variant="secondary"
               size="sm"
-              disabled={page === 1 || loading}
-              onClick={() => loadFunctions({})}
+              disabled={cursorStack.length <= 1 || loading}
+              onClick={handlePrev}
             >
               이전
             </Button>
             <Button
               variant="secondary"
               size="sm"
-              disabled={page === totalPages || loading}
-              onClick={() => loadFunctions({})}
+              disabled={!nextCursor || loading}
+              onClick={handleNext}
             >
               다음
             </Button>

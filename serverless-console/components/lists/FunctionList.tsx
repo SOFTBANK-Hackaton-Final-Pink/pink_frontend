@@ -14,6 +14,12 @@ type Props = {
   onDelete?: (id: string) => Promise<void> | void;
 };
 
+const maskId = (id: string) => {
+  if (!id) return "";
+  if (id.length <= 8) return "****";
+  return `${id.slice(0, 4)}…${id.slice(-4)}`;
+};
+
 export default function FunctionList({ items, loading, onDelete }: Props) {
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -45,7 +51,7 @@ export default function FunctionList({ items, loading, onDelete }: Props) {
                 href={`/functions/${fn.functionId}`}
                 className="text-base font-semibold text-blue-700 hover:underline"
               >
-                {fn.name}
+                {fn.name || "(no name)"}
               </Link>
               <div className="space-y-1 text-xs text-slate-600">
                 <div className="flex justify-between">
@@ -63,7 +69,7 @@ export default function FunctionList({ items, loading, onDelete }: Props) {
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <Badge variant="muted">ID {fn.functionId}</Badge>
+              <Badge variant="muted">ID {maskId(fn.functionId)}</Badge>
               <Button
                 variant="danger"
                 size="sm"

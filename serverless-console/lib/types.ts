@@ -23,6 +23,7 @@ export type ListFunctionsResult = {
   total?: number;
   page?: number;
   pageSize?: number;
+  nextCursor?: string | null;
 };
 
 export type DeleteFunctionParams = {
@@ -31,15 +32,17 @@ export type DeleteFunctionParams = {
 
 export type ExecutionRow = {
   executionId: string;
-  version: number;
-  status: "SUCCESS" | "ERROR" | "TIMEOUT" | "READY";
-  durationMs: number;
+  status: string;
   createdAt: string;
-  input: Record<string, unknown> | null;
-  output: unknown;
-  errorMessage: string | null;
-  cpuUsage?: number | null;
-  memoryUsageMb?: number | null;
+  updatedAt: string;
+  executionResult: {
+    input: string | null;
+    output: string | null;
+    errorMessage: string | null;
+    cpuUsage: number | null;
+    memoryUsageMb: number | null;
+    durationMs: number | null;
+  };
 };
 
 export type FunctionStats = {
@@ -62,5 +65,6 @@ export type FunctionDetail = {
   createdAt: string;
   updatedAt: string;
   executions: ExecutionRow[];
-  stats: FunctionStats;
+  stats?: FunctionStats;
+  nextCursor?: string | null;
 };

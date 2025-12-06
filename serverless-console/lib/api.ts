@@ -9,7 +9,7 @@ import type {
 
 export type { ListFunctionsParams, CreateFunctionPayload, FunctionDetail } from "./types";
 
-// 기본값을 실제 배포된 API 서버로 지정 (환경변수로 덮어쓰기 가능)
+// 기본 API 엔드포인트 (환경변수로 덮어쓰기 가능)
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://52.78.40.174/api";
 
 const handleJson = async <T>(res: Response) => {
@@ -58,6 +58,8 @@ export async function listFunctions(
     total: normalized.length,
     page: 1,
     pageSize: normalized.length,
+    nextCursor:
+      normalized.length >= 10 ? normalized[normalized.length - 1].updatedAt : null,
   };
 }
 
@@ -83,10 +85,29 @@ export async function deleteFunction(functionId: DeleteFunctionParams["functionI
   return handleJson(res);
 }
 
-export async function getFunctionDetail(functionId: string): Promise<FunctionDetail> {
+export async function getFunctionDetail(
+  functionId: string,
+  cursor?: string,
+): Promise<FunctionDetail> {
   const id = String(functionId ?? "").trim();
   if (!id) throw new Error("Invalid function id");
-  const res = await fetch(`${API_BASE}/functions/${id}`, { cache: "no-store" });
-  const json = await handleJson<{ data: FunctionDetail }>(res);
+  const query = new URLSearchParams();
+  if (cursor) query.set("cursor", cursor);
+  const res = await fetch(`${API_BASE}/functions/${id}?${query.toString()}`, {
+    cache: "no-store",
+  });
+  const json = await handleJson<{
+    data: FunctionDetail;
+    message?: string;
+  }>(res);
   return json.data;
+}
+
+export async function invokeFunction(functionId: string) {
+  const id = String(functionId ?? "").trim();
+  if (!id) throw new Error("Invalid function id");
+  const res = await fetch(`${API_BASE}/executions/${id}/invoke`, {
+    method: "POST",
+  });
+  return handleJson<{ data: { executionId: string; status: string } }>(res);
 }

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { getFunctionDetail, deleteFunction } from "@/lib/api";
+import { getFunctionDetail, deleteFunction, invokeFunction } from "@/lib/api";
 import type { FunctionDetail, ExecutionRow } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,12 @@ const tabs = [
 
 const formatDate = (value?: string) => (value ? new Date(value).toLocaleString() : "-");
 
+const maskId = (id: string | undefined) => {
+  if (!id) return "";
+  if (id.length <= 8) return "****";
+  return `${id.slice(0, 4)}…${id.slice(-4)}`;
+};
+
 export default function FunctionDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -36,14 +42,17 @@ export default function FunctionDetailPage() {
   const [invokeInput, setInvokeInput] = useState('{\n  "name": "demo"\n}');
   const [invokeResult, setInvokeResult] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["key"]>("code");
+  const [execCursor, setExecCursor] = useState<string | null>(null);
+  const [execNextCursor, setExecNextCursor] = useState<string | null>(null);
 
   const fetchDetail = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       setError(null);
-      const data = await getFunctionDetail(params.id);
+      const data = await getFunctionDetail(params.id, execCursor ?? undefined);
       setDetail(data);
       setEditedCode(data.code ?? "");
+      setExecNextCursor(data.nextCursor ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "불러오기 중 오류가 발생했습니다.");
       setDetail(null);
@@ -53,6 +62,9 @@ export default function FunctionDetailPage() {
   };
 
   useEffect(() => {
+    // reset cursor when id changes
+    setExecCursor(null);
+    setExecNextCursor(null);
     fetchDetail();
   }, [params.id]);
 
@@ -61,8 +73,18 @@ export default function FunctionDetailPage() {
     router.push("/");
   };
 
-  const handleInvoke = () => {
-    setInvokeResult(`요청 내용: ${invokeInput}`);
+  const handleInvoke = async () => {
+    setInvokeResult(null);
+    try {
+      const res = await invokeFunction(params.id);
+      setInvokeResult(`executionId: ${res.data.executionId}, status: ${res.data.status}`);
+      // reload executions from first page
+      setExecCursor(null);
+      setExecNextCursor(null);
+      await fetchDetail();
+    } catch (err) {
+      setInvokeResult(err instanceof Error ? err.message : "실행 요청 실패");
+    }
   };
 
   const isNotFound = error?.includes("NOT_FOUND") || error?.includes("404");
@@ -71,17 +93,17 @@ export default function FunctionDetailPage() {
 
   const avgCpu = useMemo(() => {
     if (!detail?.executions?.length) return null;
-    const filtered = detail.executions.filter((e) => typeof e.cpuUsage === "number");
+    const filtered = detail.executions.filter((e) => typeof e.executionResult?.cpuUsage === "number");
     if (!filtered.length) return null;
-    const sum = filtered.reduce((acc, cur) => acc + (cur.cpuUsage || 0), 0);
+    const sum = filtered.reduce((acc, cur) => acc + (cur.executionResult?.cpuUsage || 0), 0);
     return sum / filtered.length;
   }, [detail?.executions]);
 
   const avgMem = useMemo(() => {
     if (!detail?.executions?.length) return null;
-    const filtered = detail.executions.filter((e) => typeof e.memoryUsageMb === "number");
+    const filtered = detail.executions.filter((e) => typeof e.executionResult?.memoryUsageMb === "number");
     if (!filtered.length) return null;
-    const sum = filtered.reduce((acc, cur) => acc + (cur.memoryUsageMb || 0), 0);
+    const sum = filtered.reduce((acc, cur) => acc + (cur.executionResult?.memoryUsageMb || 0), 0);
     return sum / filtered.length;
   }, [detail?.executions]);
 
@@ -125,7 +147,7 @@ export default function FunctionDetailPage() {
       <main className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-6">
         <div className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3">
           <h1 className="text-lg font-semibold text-[var(--foreground)]">함수 개요</h1>
-          <p className="text-sm text-[var(--muted-foreground)]">함수의 생성·수정·실행 기록·메트릭을 관리합니다.</p>
+          <p className="text-sm text-[var(--muted-foreground)]">함수 메타데이터, 코드, 실행 이력·메트릭을 확인합니다.</p>
         </div>
 
         <Card className="p-6">
@@ -135,9 +157,9 @@ export default function FunctionDetailPage() {
                 {detail?.name ?? (isNotFound ? "함수를 찾을 수 없습니다" : "로딩 중")}
               </h2>
               <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted-foreground)]">
-                <span>런타임: {detail?.runtime ?? "-"}</span>
+                <span>런타임 {detail?.runtime ?? "-"}</span>
                 <Badge variant="muted">v{detail?.latestVersion ?? "-"}</Badge>
-                <Badge variant="muted">ID {detail?.functionId ?? params.id}</Badge>
+                <Badge variant="muted">ID {maskId(detail?.functionId ?? params.id)}</Badge>
               </div>
             </div>
             <Button variant="danger" onClick={handleDelete} disabled={!detail}>
@@ -237,38 +259,83 @@ export default function FunctionDetailPage() {
           <Card className="p-6">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-semibold">실행 기록</h3>
-              <span className="text-xs text-[var(--muted-foreground)]">최신 순으로 표시됩니다.</span>
+              <span className="text-xs text-[var(--muted-foreground)]">최신 순으로 정렬됩니다.</span>
             </div>
             {detail?.executions?.length ? (
-              <div className="overflow-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="text-left text-[var(--muted-foreground)]">
-                    <tr>
-                      <th className="pb-2 pr-3">상태</th>
-                      <th className="pb-2 pr-3">버전</th>
-                      <th className="pb-2 pr-3">실행 시간</th>
-                      <th className="pb-2 pr-3">CPU %</th>
-                      <th className="pb-2 pr-3">메모리(MB)</th>
-                      <th className="pb-2 pr-3">실행 시각</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--border)]">
-                    {detail.executions
-                      .slice()
-                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .map((exec) => (
-                        <tr key={exec.executionId} className="align-top">
-                          <td className="py-2 pr-3"><StatusBadge status={exec.status} /></td>
-                          <td className="py-2 pr-3">v{exec.version}</td>
-                          <td className="py-2 pr-3">{exec.durationMs} ms</td>
-                          <td className="py-2 pr-3">{exec.cpuUsage ?? "-"}%</td>
-                          <td className="py-2 pr-3">{exec.memoryUsageMb ?? "-"} MB</td>
-                          <td className="py-2 pr-3 whitespace-nowrap">{formatDate(exec.createdAt)}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+              <>
+                <div className="overflow-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="text-left text-[var(--muted-foreground)]">
+                      <tr>
+                        <th className="pb-2 pr-3">상태</th>
+                        <th className="pb-2 pr-3">CPU %</th>
+                        <th className="pb-2 pr-3">메모리(MB)</th>
+                        <th className="pb-2 pr-3">실행 시간</th>
+                        <th className="pb-2 pr-3">입력</th>
+                        <th className="pb-2 pr-3">출력</th>
+                        <th className="pb-2 pr-3">에러</th>
+                        <th className="pb-2 pr-3 whitespace-nowrap">시간</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border)]">
+                      {detail.executions
+                        .slice()
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .map((exec) => (
+                          <tr key={exec.executionId} className="align-top">
+                            <td className="py-2 pr-3"><StatusBadge status={exec.status} /></td>
+                            <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
+                              {exec.executionResult?.cpuUsage ?? "-"}%
+                            </td>
+                            <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
+                              {exec.executionResult?.memoryUsageMb ?? "-"} MB
+                            </td>
+                            <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
+                              {exec.executionResult?.durationMs ?? "-"} ms
+                            </td>
+                            <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
+                              {exec.executionResult?.input ?? "-"}
+                            </td>
+                            <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
+                              {exec.executionResult?.output ?? "-"}
+                            </td>
+                            <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
+                              {exec.executionResult?.errorMessage ?? "-"}
+                            </td>
+                            <td className="py-2 pr-3 whitespace-nowrap text-xs text-[var(--muted-foreground)]">
+                              {formatDate(exec.createdAt)}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={!execCursor || loading}
+                    onClick={() => {
+                      setExecCursor(null);
+                      setExecNextCursor(null);
+                      fetchDetail();
+                    }}
+                  >
+                    처음
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={!execNextCursor || loading}
+                    onClick={() => {
+                      setExecCursor(execNextCursor);
+                      fetchDetail();
+                    }}
+                  >
+                    다음 실행 이력
+                  </Button>
+                </div>
+              </>
             ) : (
               <p className="text-sm text-[var(--muted-foreground)]">실행 기록이 없습니다.</p>
             )}
