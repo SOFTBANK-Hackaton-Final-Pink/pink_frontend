@@ -68,3 +68,9 @@ export type FunctionDetail = {
   stats?: FunctionStats;
   nextCursor?: string | null;
 };
+
+export type UpdateCodeResponse = {
+  functionId: string;
+  newVersion: number;
+  updatedAt: string;
+};

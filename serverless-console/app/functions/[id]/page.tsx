@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { getFunctionDetail, deleteFunction, invokeFunction } from "@/lib/api";
+import { getFunctionDetail, deleteFunction, invokeFunction, updateFunctionCode } from "@/lib/api";
 import type { FunctionDetail, ExecutionRow } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ export default function FunctionDetailPage() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["key"]>("code");
   const [execCursor, setExecCursor] = useState<string | null>(null);
   const [execNextCursor, setExecNextCursor] = useState<string | null>(null);
+  const [savingCode, setSavingCode] = useState(false);
 
   const fetchDetail = async () => {
     setLoading(true);
@@ -146,7 +147,7 @@ export default function FunctionDetailPage() {
 
       <main className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-6">
         <div className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3">
-          <h1 className="text-lg font-semibold text-[var(--foreground)]">함수 개요</h1>
+          <h1 className="text-lg font-semibold text-[var(--foreground)]">함수 상세</h1>
           <p className="text-sm text-[var(--muted-foreground)]">함수 메타데이터, 코드, 실행 이력·메트릭을 확인합니다.</p>
         </div>
 
@@ -205,13 +206,21 @@ export default function FunctionDetailPage() {
               <Button
                 variant={isDirty ? "primary" : "secondary"}
                 size="sm"
-                disabled={!isDirty}
-                onClick={() => {
+                disabled={!isDirty || savingCode || !detail}
+                onClick={async () => {
                   if (!detail) return;
-                  setDetail({ ...detail, code: editedCode });
+                  try {
+                    setSavingCode(true);
+                    await updateFunctionCode(detail.functionId, editedCode);
+                    await fetchDetail();
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "코드 업데이트 중 오류");
+                  } finally {
+                    setSavingCode(false);
+                  }
                 }}
               >
-                {isDirty ? "Save & Deploy New Version" : "No Changes"}
+                {isDirty ? (savingCode ? "Saving..." : "Save & Deploy New Version") : "No Changes"}
               </Button>
             </div>
             <CodeEditor

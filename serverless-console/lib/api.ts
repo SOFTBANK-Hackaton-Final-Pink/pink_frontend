@@ -5,12 +5,13 @@ import type {
   ListFunctionsResult,
   DeleteFunctionParams,
   FunctionDetail,
+  UpdateCodeResponse,
 } from "./types";
 
 export type { ListFunctionsParams, CreateFunctionPayload, FunctionDetail } from "./types";
 
 // 기본 API 엔드포인트 (환경변수로 덮어쓰기 가능)
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://52.78.40.174/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://api.code-bento.shop/api";
 
 const handleJson = async <T>(res: Response) => {
   if (!res.ok) {
@@ -110,4 +111,15 @@ export async function invokeFunction(functionId: string) {
     method: "POST",
   });
   return handleJson<{ data: { executionId: string; status: string } }>(res);
+}
+
+export async function updateFunctionCode(functionId: string, code: string) {
+  const id = String(functionId ?? "").trim();
+  if (!id) throw new Error("Invalid function id");
+  const res = await fetch(`${API_BASE}/functions/${id}/code`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  return handleJson<{ data: UpdateCodeResponse }>(res);
 }
