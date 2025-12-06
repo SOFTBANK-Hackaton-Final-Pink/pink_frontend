@@ -2,33 +2,36 @@
 
 :root {
   --font-size: 16px;
-  --background: #f9fbff;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --primary: #5d7df6;
+  --background: #fff8f3;
+  --foreground: #3a3a3a;
+  --card: rgba(255, 255, 255, 0.72);
+  --card-foreground: #3a3a3a;
+  --primary: #ff6b9d; /* 코드오벤또 핑크 */
   --primary-foreground: #ffffff;
-  --secondary: #e8f9ed;
-  --secondary-foreground: #0f172a;
-  --muted: #eff4fb;
-  --muted-foreground: #64748b;
-  --accent: #edf2ff;
-  --accent-foreground: #0f172a;
+  --secondary: #ffe5f0;
+  --secondary-foreground: #3a3a3a;
+  --muted: rgba(255, 255, 255, 0.6);
+  --muted-foreground: #5b6478;
+  --accent: #ffb7d5;
+  --accent-foreground: #3a3a3a;
   --destructive: #e03131;
   --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.07);
-  --input: #ffffff;
-  --input-background: #ffffff;
-  --radius: 12px;
-  --ring: rgba(93, 125, 246, 0.25);
+  --border: rgba(255, 255, 255, 0.5);
+  --input: rgba(255, 255, 255, 0.9);
+  --input-background: rgba(255, 255, 255, 0.9);
+  --radius: 18px;
+  --ring: rgba(255, 107, 157, 0.35);
+  --shadow: 0 14px 36px rgba(255, 107, 157, 0.18);
+  --shadow-soft: 0 10px 26px rgba(255, 107, 157, 0.12);
 }
 
 /* Glass / shimmer / loader utilities */
 .glass-card {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  border-radius: var(--radius);
 }
 
 .shimmer {
@@ -89,9 +92,9 @@
 }
 
 body {
-  background: var(--background);
+  background: linear-gradient(135deg, #fff8f3 0%, #ffe5f0 40%, #ffe5f0 70%, #fff9f6 100%);
   color: var(--foreground);
-  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 * {

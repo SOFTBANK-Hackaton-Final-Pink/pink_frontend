@@ -65,57 +65,71 @@ export default function HomePage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+    <div className="relative min-h-screen text-[var(--foreground)]">
       {loading && (
         <div className="overlay-loader">
           <div className="spinner" />
           <div className="text-sm">불러오는 중...</div>
         </div>
       )}
-      <header className="bg-[var(--primary)] text-white shadow-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-md bg-white/15 px-3 py-2 text-sm font-semibold uppercase tracking-wide">
-              SERVERLESS
-            </div>
-            <span className="text-sm">Functions Console</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/25"
-            >
-              <span aria-hidden="true">📊</span>
-              Dashboard
-            </Link>
-            <span className="text-xs opacity-85">SoftBank Hackathon · Prod</span>
-          </div>
+
+      <header className="mb-4 rounded-[20px] bg-gradient-to-r from-[#ff6b9d] to-[#ff9f9f] px-5 py-3 shadow-lg text-white flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">SERVERLESS</div>
+          <span className="text-sm">Functions Console</span>
         </div>
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold hover:bg-white/30 transition"
+        >
+          <span aria-hidden>📊</span>
+          Dashboard
+          <span className="text-xs font-normal opacity-80">Dashboard · Grafana Style</span>
+        </Link>
       </header>
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-6">
-        <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--secondary)] px-4 py-3 text-[var(--foreground)]">
-          <h2 className="text-lg font-semibold">함수 개요</h2>
-          <p className="text-sm text-[var(--muted-foreground)]">함수 생성·목록·삭제를 관리합니다.</p>
+      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 md:px-6 bg-[#fff7f2] rounded-[28px] shadow-lg border border-[var(--border)]">
+        <section className="glass-card px-4 py-4 text-[var(--foreground)] border-[4px] border-[#b7eac9] shadow-lg rounded-[24px]">
+          <div className="flex items-center gap-2">
+            <span className="text-xl" aria-hidden>
+              🍙
+            </span>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--foreground)]">함수 개요</h2>
+              <p className="text-sm text-[var(--muted-foreground)]">함수 생성·목록·삭제를 관리합니다.</p>
+            </div>
+          </div>
         </section>
 
-        <Card className="p-6">
+        <Card className="glass-card p-6 shadow-lg border-[4px] border-[#ffb7d5] rounded-[24px]">
           <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-semibold text-[var(--foreground)]">함수 생성</h3>
-              <p className="text-sm text-[var(--muted-foreground)]"></p>
+            <div className="flex items-center gap-2">
+              <span className="text-lg" aria-hidden>
+                🎀
+              </span>
+              <div>
+                <h3 className="text-base font-semibold text-[var(--foreground)]">새 함수 만들기</h3>
+                <p className="text-xs text-[var(--muted-foreground)]">맛있는 함수 도시락을 만들어보세요</p>
+              </div>
             </div>
             <span className="text-xs text-[var(--muted-foreground)]">POST /api/functions</span>
           </div>
           <FunctionForm onSubmit={handleCreate} />
         </Card>
 
-        <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--secondary)] px-4 py-3 text-[var(--foreground)]">
-          <h2 className="text-lg font-semibold">함수 목록</h2>
-          <p className="text-sm text-[var(--muted-foreground)]">함수를 선택해 상세/실행 기록을 확인하세요.</p>
+        <section className="glass-card px-4 py-4 text-[var(--foreground)] border-[4px] border-[#ffcba4] shadow-lg rounded-[24px]">
+          <div className="flex items-center gap-2">
+            <span className="text-lg" aria-hidden>
+              🍱
+            </span>
+            <div>
+              <h2 className="text-lg font-semibold">함수 목록</h2>
+              <p className="text-sm text-[var(--muted-foreground)]">함수를 선택해 상세/실행 기록을 확인하세요.</p>
+            </div>
+          </div>
         </section>
 
-        <Card className="p-6">
+        <Card className="glass-card p-6 shadow-lg border-[4px] border-[#e5b8f4] rounded-[24px]">
           <div className="mb-4 flex items-center justify-between">
             <span className="text-xs text-[var(--muted-foreground)]">
               Page {page}

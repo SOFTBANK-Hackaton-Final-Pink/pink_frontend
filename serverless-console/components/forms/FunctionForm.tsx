@@ -13,11 +13,7 @@ type Props = {
 };
 
 const RUNTIMES = ["python:3.9-alpine", "node:18-alpine"];
-const DEFAULT_CODE = `exports.handler = async (event) => {
-  // TODO: add your logic
-  const name = event?.name ?? "world";
-  return { message: \`Hello \${name}\` };
-};`;
+const DEFAULT_CODE = "";
 
 export default function FunctionForm({ onSubmit }: Props) {
   const [name, setName] = useState("");

@@ -29,7 +29,7 @@ const formatDate = (value?: string) => (value ? new Date(value).toLocaleString()
 const maskId = (id: string | undefined) => {
   if (!id) return "";
   if (id.length <= 8) return "****";
-  return `${id.slice(0, 4)}…${id.slice(-4)}`;
+  return `${id.slice(0, 4)}...${id.slice(-4)}`;
 };
 
 export default function FunctionDetailPage() {
@@ -39,17 +39,12 @@ export default function FunctionDetailPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editedCode, setEditedCode] = useState<string>("");
-  const [invokeInput, setInvokeInput] = useState('{\n  "name": "demo"\n}');
+  const [invokeInput, setInvokeInput] = useState("");
   const [invokeResult, setInvokeResult] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["key"]>("code");
   const [execCursor, setExecCursor] = useState<string | null>(null);
   const [execNextCursor, setExecNextCursor] = useState<string | null>(null);
   const [savingCode, setSavingCode] = useState(false);
-  const refreshExecutions = async () => {
-    setExecCursor(null);
-    setExecNextCursor(null);
-    await fetchDetail();
-  };
 
   const fetchDetail = async () => {
     setLoading(true);
@@ -60,18 +55,24 @@ export default function FunctionDetailPage() {
       setEditedCode(data.code ?? "");
       setExecNextCursor(data.nextCursor ?? null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "불러오기 중 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : "불러오기 오류가 발생했습니다.");
       setDetail(null);
     } finally {
       setLoading(false);
     }
   };
 
+  const refreshExecutions = async () => {
+    setExecCursor(null);
+    setExecNextCursor(null);
+    await fetchDetail();
+  };
+
   useEffect(() => {
-    // reset cursor when id changes
     setExecCursor(null);
     setExecNextCursor(null);
     fetchDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   const handleDelete = async () => {
@@ -84,7 +85,6 @@ export default function FunctionDetailPage() {
     try {
       const res = await invokeFunction(params.id);
       setInvokeResult(`executionId: ${res.data.executionId}, status: ${res.data.status}`);
-      // reload executions from first page
       await refreshExecutions();
     } catch (err) {
       setInvokeResult(err instanceof Error ? err.message : "실행 요청 실패");
@@ -112,46 +112,36 @@ export default function FunctionDetailPage() {
   }, [detail?.executions]);
 
   return (
-    <div className="relative min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+    <div className="relative min-h-screen text-[var(--foreground)]">
       {loading && (
         <div className="overlay-loader">
           <div className="spinner" />
           <div className="text-sm text-white">로딩 중...</div>
         </div>
       )}
-      <header className="bg-[var(--primary)] text-white shadow-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="rounded-full bg-white/15 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/25"
-              aria-label="메인으로 돌아가기"
-            >
-              ←
-            </button>
-            <div className="rounded-md bg-white/15 px-3 py-2 text-sm font-semibold uppercase tracking-wide">
-              SERVERLESS
-            </div>
-            <span className="text-sm">Functions Console</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/25"
-            >
-              <span aria-hidden="true">📊</span>
-              Dashboard
-            </Link>
-            <span className="text-xs opacity-85">Dashboard · Grafana Style</span>
-          </div>
+      <header className="mb-4 flex items-center justify-between rounded-[20px] bg-gradient-to-r from-[#ff6b9d] to-[#ff9f9f] px-5 py-3 text-white shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">SERVERLESS</div>
+          <span className="text-sm">Functions Console</span>
         </div>
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold transition hover:bg-white/30"
+        >
+          <span aria-hidden>📊</span>
+          Dashboard
+          <span className="text-xs font-normal opacity-80">Dashboard · Grafana Style</span>
+        </Link>
       </header>
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-6">
-        <div className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3">
-          <h1 className="text-lg font-semibold text-[var(--foreground)]">함수 상세</h1>
-          <p className="text-sm text-[var(--muted-foreground)]">함수 메타데이터, 코드, 실행 이력·메트릭을 확인합니다.</p>
+      <main className="mx-auto flex max-w-6xl flex-col gap-4 rounded-[28px] border border-[var(--border)] bg-[#fff7f2] px-4 py-6 shadow-lg md:px-6">
+        <div className="rounded-[var(--radius)] border border-pink-200 bg-white/70 px-5 py-4 shadow-sm backdrop-blur">
+          <h1 className="flex items-center gap-2 text-lg font-semibold text-[var(--foreground)]">
+            <span aria-hidden>🍱</span> 함수 상세
+          </h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            함수 메타데이터, 코드, 실행 이력·메트릭을 확인합니다.
+          </p>
         </div>
 
         <Card className="p-6">
@@ -161,7 +151,7 @@ export default function FunctionDetailPage() {
                 {detail?.name ?? (isNotFound ? "함수를 찾을 수 없습니다" : "로딩 중")}
               </h2>
               <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted-foreground)]">
-                <span>런타임 {detail?.runtime ?? "-"}</span>
+                <span>런타임: {detail?.runtime ?? "-"}</span>
                 <Badge variant="muted">v{detail?.latestVersion ?? "-"}</Badge>
                 <Badge variant="muted">ID {maskId(detail?.functionId ?? params.id)}</Badge>
               </div>
@@ -172,9 +162,7 @@ export default function FunctionDetailPage() {
           </div>
           {error && (
             <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {isNotFound
-                ? "해당 함수를 찾을 수 없습니다. 목록에서 다시 선택해주세요."
-                : error}
+              {isNotFound ? "해당 함수를 찾을 수 없습니다. 목록에서 다시 선택해주세요." : error}
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 text-sm text-[var(--muted-foreground)]">
@@ -192,7 +180,7 @@ export default function FunctionDetailPage() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`pb-2 text-sm font-medium transition ${
                   active
-                    ? "text-[var(--primary)] border-b-2 border-[var(--primary)]"
+                    ? "border-b-2 border-[var(--primary)] text-[var(--primary)]"
                     : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                 }`}
               >
@@ -217,7 +205,7 @@ export default function FunctionDetailPage() {
                     await updateFunctionCode(detail.functionId, editedCode);
                     await fetchDetail();
                   } catch (err) {
-                    setError(err instanceof Error ? err.message : "코드 업데이트 중 오류");
+                    setError(err instanceof Error ? err.message : "코드 업데이트 실패");
                   } finally {
                     setSavingCode(false);
                   }
@@ -227,11 +215,7 @@ export default function FunctionDetailPage() {
               </Button>
             </div>
             <CodeEditor
-              value={
-                editedCode ||
-                detail?.code ||
-                `exports.handler = async (event) => {\n  // Your code here\n  return {\n    statusCode: 200,\n    body: JSON.stringify({ message: "Hello from Node.js!" })\n  };\n};`
-              }
+              value={editedCode || detail?.code || ""}
               onChange={setEditedCode}
               readOnly={false}
             />
@@ -297,7 +281,9 @@ export default function FunctionDetailPage() {
                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                         .map((exec) => (
                           <tr key={exec.executionId} className="align-top">
-                            <td className="py-2 pr-3"><StatusBadge status={exec.status} /></td>
+                            <td className="py-2 pr-3">
+                              <StatusBadge status={exec.status} />
+                            </td>
                             <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
                               {exec.executionResult?.cpuUsage ?? "-"}%
                             </td>
@@ -316,7 +302,7 @@ export default function FunctionDetailPage() {
                             <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
                               {exec.executionResult?.errorMessage ?? "-"}
                             </td>
-                            <td className="py-2 pr-3 whitespace-nowrap text-xs text-[var(--muted-foreground)]">
+                            <td className="whitespace-nowrap py-2 pr-3 text-xs text-[var(--muted-foreground)]">
                               {formatDate(exec.createdAt)}
                             </td>
                           </tr>
