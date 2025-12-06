@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import FunctionForm from "@/components/forms/FunctionForm";
 import FunctionList from "@/components/lists/FunctionList";
 import { createFunction, listFunctions, type ListFunctionsParams } from "@/lib/api";

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { getFunctionDetail, deleteFunction, invokeFunction, updateFunctionCode } from "@/lib/api";
 import type { FunctionDetail, ExecutionRow } from "@/lib/types";
@@ -44,6 +43,8 @@ export default function FunctionDetailPage() {
   const [execCursor, setExecCursor] = useState<string | null>(null);
   const [execNextCursor, setExecNextCursor] = useState<string | null>(null);
   const [savingCode, setSavingCode] = useState(false);
+  const [invoking, setInvoking] = useState(false);
+  const MIN_INVOKE_MS = 800;
 
   const fetchDetail = async () => {
     setLoading(true);
@@ -81,12 +82,20 @@ export default function FunctionDetailPage() {
 
   const handleInvoke = async () => {
     setInvokeResult(null);
+    setInvoking(true);
+    const start = Date.now();
     try {
       const res = await invokeFunction(params.id);
       setInvokeResult(`executionId: ${res.data.executionId}, status: ${res.data.status}`);
       await refreshExecutions();
     } catch (err) {
       setInvokeResult(err instanceof Error ? err.message : "실행 요청 실패");
+    } finally {
+      const elapsed = Date.now() - start;
+      if (elapsed < MIN_INVOKE_MS) {
+        await new Promise((res) => setTimeout(res, MIN_INVOKE_MS - elapsed));
+      }
+      setInvoking(false);
     }
   };
 
@@ -112,6 +121,37 @@ export default function FunctionDetailPage() {
 
   return (
     <div className="relative min-h-screen text-[var(--foreground)]">
+      {invoking && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="glass-card flex flex-col items-center gap-3 px-6 py-5 shadow-2xl rounded-2xl border border-[var(--border)]">
+            <div className="w-48 h-3 rounded-full bg-white/40 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#ff6b9d] to-[#ffcba4] bar-fill"
+                style={{ animationDuration: `${Math.max(MIN_INVOKE_MS, 800)}ms` }}
+                aria-label="loading"
+              />
+            </div>
+            <div className="text-sm font-medium text-black drop-shadow">
+              현재 코드가 실행되고 있습니다. 잠시만 기다려주세요.
+            </div>
+          </div>
+          <style jsx>{`
+            @keyframes obento-bar {
+              from {
+                width: 0%;
+              }
+              to {
+                width: 100%;
+              }
+            }
+            .bar-fill {
+              animation-name: obento-bar;
+              animation-timing-function: linear;
+              animation-fill-mode: forwards;
+            }
+          `}</style>
+        </div>
+      )}
       {loading && (
         <div className="overlay-loader">
           <div className="spinner" />
@@ -123,14 +163,6 @@ export default function FunctionDetailPage() {
           <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Pink</div>
           <span className="text-sm">Functions Console</span>
         </div>
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold transition hover:bg-white/30"
-        >
-          <span aria-hidden>📊</span>
-          Dashboard
-          <span className="text-xs font-normal opacity-80">Dashboard · Grafana Style</span>
-        </Link>
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-4 rounded-[28px] border border-[var(--border)] bg-[#fff7f2] px-4 py-6 shadow-lg md:px-6">
@@ -219,10 +251,15 @@ export default function FunctionDetailPage() {
               readOnly={false}
             />
 
-            <div className="mt-4 flex gap-2">
-              <Button variant="primary" onClick={handleInvoke}>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Button variant="primary" onClick={handleInvoke} disabled={invoking}>
                 실행
               </Button>
+              {invoking && (
+                <span className="text-xs text-[var(--muted-foreground)]">
+                  현재 코드가 실행되고 있습니다. 잠시만 기다려주세요.
+                </span>
+              )}
               {invokeResult && (
                 <div className="rounded-md border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-sm text-[var(--foreground)]">
                   {invokeResult}
@@ -332,39 +369,17 @@ export default function FunctionDetailPage() {
               <h3 className="text-base font-semibold">메트릭</h3>
               <span className="text-xs text-[var(--muted-foreground)]">기본 실행 지표를 확인하세요.</span>
             </div>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-              <Card className="p-4">
-                <div className="text-xs text-[var(--muted-foreground)]">총 실행</div>
-                <div className="text-lg font-semibold">{stats?.totalExecutions ?? "-"}</div>
-              </Card>
-              <Card className="p-4">
-                <div className="text-xs text-[var(--muted-foreground)]">성공률</div>
-                <div className="text-lg font-semibold">
-                  {stats ? `${stats.successRate.toFixed(1)}%` : "-"}
-                </div>
-              </Card>
-              <Card className="p-4">
-                <div className="text-xs text-[var(--muted-foreground)]">평균 실행 시간</div>
-                <div className="text-lg font-semibold">
-                  {stats ? `${stats.avgDurationMs.toFixed(0)} ms` : "-"}
-                </div>
-              </Card>
-              <Card className="p-4">
-                <div className="text-xs text-[var(--muted-foreground)]">에러율</div>
-                <div className="text-lg font-semibold">
-                  {stats ? `${stats.errorRate.toFixed(1)}%` : "-"}
-                </div>
-              </Card>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               <Card className="p-4">
                 <div className="text-xs text-[var(--muted-foreground)]">평균 CPU</div>
                 <div className="text-lg font-semibold">
-                  {avgCpu !== null ? `${avgCpu.toFixed(1)}%` : "-"}
+                  {avgCpu !== null ? `${avgCpu}%` : "-"}
                 </div>
               </Card>
               <Card className="p-4">
                 <div className="text-xs text-[var(--muted-foreground)]">평균 메모리</div>
                 <div className="text-lg font-semibold">
-                  {avgMem !== null ? `${avgMem.toFixed(1)} MB` : "-"}
+                  {avgMem !== null ? `${avgMem} MB` : "-"}
                 </div>
               </Card>
             </div>
