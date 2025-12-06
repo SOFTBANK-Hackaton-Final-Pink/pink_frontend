@@ -22,39 +22,37 @@ const handleJson = async <T>(res: Response) => {
 export async function listFunctions(
   params: ListFunctionsParams,
 ): Promise<ListFunctionsResult> {
-  const query = new URLSearchParams({
-    page: String(params.page),
-    pageSize: String(params.pageSize),
-  });
+  const query = new URLSearchParams();
+  if (params.cursor) query.set("cursor", params.cursor);
 
   const res = await fetch(`${API_BASE}/functions?${query.toString()}`, {
     cache: "no-store",
   });
 
-  const json = await handleJson<{ data: FunctionListItem[]; total?: number }>(
+  const json = await handleJson<{ data: FunctionListItem[]; message?: string }>(
     res,
   );
 
-  const normalized = (json.data ?? [])
+  const normalized: FunctionListItem[] = (json.data ?? [])
     .map((item) => {
       const rawId =
         (item as any).functionId ??
         (item as any).id ??
         (item as any).function_id;
-      const parsedId =
-        rawId === undefined || rawId === null ? undefined : String(rawId);
+      const parsedId = rawId == null ? "" : String(rawId).trim();
       return {
-        ...item,
         functionId: parsedId,
+        name: (item as any).name ?? "",
+        runtime: (item as any).runtime ?? "",
+        latestVersion: (item as any).latestVersion ?? 0,
+        updatedAt: (item as any).updatedAt ?? "",
       };
     })
-    .filter((item) => !!item.functionId);
+    .filter((item) => item.functionId !== "");
 
   return {
     items: normalized,
-    total: json.total ?? normalized.length ?? 0,
-    page: params.page,
-    pageSize: params.pageSize,
+    message: json.message,
   };
 }
 

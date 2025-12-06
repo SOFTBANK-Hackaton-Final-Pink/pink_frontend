@@ -111,5 +111,9 @@ export async function DELETE(
   const id = (rawId ?? "").trim();
 
   const deleted = removeById(id);
-  return NextResponse.json({ success: true, data: { deleted } });
+  return NextResponse.json({
+    success: true,
+    data: { deleted },
+    message: deleted ? "deleted" : "not found",
+  });
 }

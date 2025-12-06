@@ -13,15 +13,12 @@ export type CreateFunctionPayload = {
 };
 
 export type ListFunctionsParams = {
-  page: number;
-  pageSize: number;
+  cursor?: string; // ISO datetime string
 };
 
 export type ListFunctionsResult = {
   items: FunctionListItem[];
-  total: number;
-  page: number;
-  pageSize: number;
+  message?: string;
 };
 
 export type DeleteFunctionParams = {
