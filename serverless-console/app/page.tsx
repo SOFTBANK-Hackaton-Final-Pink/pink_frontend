@@ -78,14 +78,6 @@ export default function HomePage() {
           <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">SERVERLESS</div>
           <span className="text-sm">Functions Console</span>
         </div>
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold hover:bg-white/30 transition"
-        >
-          <span aria-hidden>📊</span>
-          Dashboard
-          <span className="text-xs font-normal opacity-80">Dashboard · Grafana Style</span>
-        </Link>
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 md:px-6 bg-[#fff7f2] rounded-[28px] shadow-lg border border-[var(--border)]">

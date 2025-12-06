@@ -19,7 +19,6 @@ function StatusBadge({ status }: { status: ExecutionRow["status"] }) {
 
 const tabs = [
   { key: "code", label: "코드 편집기" },
-  { key: "execute", label: "실행" },
   { key: "history", label: "실행 기록" },
   { key: "metrics", label: "메트릭" },
 ] as const;
@@ -219,26 +218,11 @@ export default function FunctionDetailPage() {
               onChange={setEditedCode}
               readOnly={false}
             />
-          </Card>
-        )}
 
-        {activeTab === "execute" && (
-          <Card className="p-6">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-base font-semibold">실행</h3>
-              <span className="text-xs text-[var(--muted-foreground)]">JSON 입력을 넣고 실행해보세요.</span>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Textarea
-                className="h-32 font-mono"
-                value={invokeInput}
-                onChange={(e) => setInvokeInput(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <Button variant="primary" onClick={handleInvoke}>
-                  실행
-                </Button>
-              </div>
+            <div className="mt-4 flex gap-2">
+              <Button variant="primary" onClick={handleInvoke}>
+                실행
+              </Button>
               {invokeResult && (
                 <div className="rounded-md border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-sm text-[var(--foreground)]">
                   {invokeResult}

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Serverless Functions Console",
-  description: "함수 개요 · 상세 · 대시보드를 관리하는 콘솔",
+  description: "함수 개요 · 상세 · 대시보드 관리 콘솔",
 };
 
 export default function RootLayout({
@@ -35,25 +35,19 @@ export default function RootLayout({
                 🍱
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold text-[var(--foreground)]">
-                  코드오벤또
-                </span>
-                <span className="text-xs text-[var(--muted-foreground)]">
-                  Code Obento
-                </span>
+                <span className="text-sm font-semibold text-[var(--foreground)]">코드벤또</span>
+                <span className="text-xs text-[var(--muted-foreground)]">Code bento</span>
               </div>
             </div>
 
             <nav className="flex-1 px-3 py-4 space-y-1 text-sm">
               <SidebarLink href="/" label="함수 개요" icon="🍱" />
-              <SidebarLink href="/functions/1" label="함수 상세 (예시)" icon="💻" />
-              <SidebarLink href="/dashboard" label="대시보드" icon="📊" />
             </nav>
 
             <div className="px-4 pb-4">
               <div className="glass-card p-3 text-center">
                 <div className="text-xl">🌸</div>
-                <div className="text-xs text-[var(--muted-foreground)]">봄날 도시락처럼</div>
+                <div className="text-xs text-[var(--muted-foreground)]">행복한 하루 되세요!</div>
               </div>
             </div>
           </aside>
@@ -75,7 +69,7 @@ function SidebarLink({ href, label, icon }: SidebarLinkProps) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-lg px-3 py-2 text-[var(--foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)] transition font-medium"
+      className="flex items-center gap-3 rounded-lg px-3 py-2 text-[var(--foreground)] transition font-medium hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
     >
       <span aria-hidden>{icon ?? "•"}</span>
       <span>{label}</span>
