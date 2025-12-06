@@ -24,9 +24,11 @@ jobs:
         working-directory: ./serverless-console
         run: npm ci
 
-      - name: Build Next.js
+      - name: Build & Export
         working-directory: ./serverless-console
-        run: npm run build
+        run: |
+          npm run build
+          npm run export
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
