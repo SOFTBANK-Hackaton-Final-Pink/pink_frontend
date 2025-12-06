@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type TimeRange = "15m" | "1h" | "6h" | "24h" | "7d";
-
 type MetricSnapshot = {
   totalInvocations: number;
   successRate: number;
@@ -13,8 +12,17 @@ type MetricSnapshot = {
   p95Ms: number;
   change: number;
 };
-
 type SeriesPoint = { label: string; success: number; error: number };
+type Activity = { id: string; type: "create" | "delete" | "execute" | "deploy"; message: string; at: string };
+type TerminalLine = { id: string; text: string };
+type ExecutionRow = {
+  id: string;
+  status: "SUCCESS" | "ERROR";
+  durationMs: number;
+  cpuUsage: number;
+  memoryUsageMb: number;
+  createdAt: string;
+};
 
 const ranges: { key: TimeRange; label: string }[] = [
   { key: "15m", label: "Last 15 minutes" },
@@ -24,33 +32,27 @@ const ranges: { key: TimeRange; label: string }[] = [
   { key: "7d", label: "Last 7 days" },
 ];
 
-function generateSnapshot(range: TimeRange): MetricSnapshot {
-  const factor = { "15m": 0.3, "1h": 0.6, "6h": 1, "24h": 1.4, "7d": 2 }[range];
-  const total = Math.floor(500 * factor + Math.random() * 200);
-  const successRate = Math.max(0, Math.min(100, 70 + Math.random() * 25));
-  const avgResponseMs = Math.floor(30 + Math.random() * 120);
-  const p95Ms = avgResponseMs + Math.floor(50 + Math.random() * 120);
-  const health = Math.max(40, Math.min(100, successRate - Math.random() * 10));
-  const change = Math.round((Math.random() * 10 - 5) * 10) / 10;
-  return { totalInvocations: total, successRate, avgResponseMs, health, p95Ms, change };
-}
-
-function generateSeries(range: TimeRange): SeriesPoint[] {
-  const buckets = range === "7d" ? 14 : range === "24h" ? 12 : 8;
-  return Array.from({ length: buckets }, (_, i) => {
-    const success = Math.floor(Math.random() * 60) + 5;
-    const error = Math.floor(Math.random() * 8);
-    return { label: `${i * (range === "7d" ? 12 : 2)}h ago`, success, error };
-  }).reverse();
-}
+const EMPTY_SNAPSHOT: MetricSnapshot = {
+  totalInvocations: 0,
+  successRate: 0,
+  avgResponseMs: 0,
+  health: 0,
+  p95Ms: 0,
+  change: 0,
+};
+const EMPTY_SERIES: SeriesPoint[] = [];
 
 export default function DashboardPage() {
   const router = useRouter();
   const [range, setRange] = useState<TimeRange>("1h");
-  const [snapshot, setSnapshot] = useState<MetricSnapshot>(() => generateSnapshot("1h"));
-  const [series, setSeries] = useState<SeriesPoint[]>(() => generateSeries("1h"));
-  const [runtimeSplit, setRuntimeSplit] = useState({ node: 50, python: 50 });
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [loading, setLoading] = useState(true);
+  const [snapshot, setSnapshot] = useState<MetricSnapshot>(EMPTY_SNAPSHOT);
+  const [series, setSeries] = useState<SeriesPoint[]>(EMPTY_SERIES);
+  const [runtimeSplit, setRuntimeSplit] = useState({ node: 0, python: 0 });
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
+  const [executions, setExecutions] = useState<ExecutionRow[]>([]);
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -61,32 +63,37 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    setSnapshot(generateSnapshot(range));
-    setSeries(generateSeries(range));
-    const node = Math.floor(40 + Math.random() * 20);
-    const python = 100 - node;
-    setRuntimeSplit({ node, python });
-    setLastUpdated(new Date());
-  }, [range]);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSnapshot(generateSnapshot(range));
-      setSeries(generateSeries(range));
+    // Placeholder: 실제 API 연동 시 이곳에서 데이터 로딩
+    setLoading(true);
+    setSnapshot(EMPTY_SNAPSHOT);
+    setSeries(EMPTY_SERIES);
+    setRuntimeSplit({ node: 0, python: 0 });
+    setExecutions([]);
+    setActivities([]);
+    setTerminalLines([]);
+    const id = setTimeout(() => {
+      setLoading(false);
       setLastUpdated(new Date());
-    }, 5000);
-    return () => clearInterval(id);
+    }, 400);
+    return () => clearTimeout(id);
   }, [range]);
 
   const runtimeGradient = useMemo(() => {
-    const total = runtimeSplit.node + runtimeSplit.python || 1;
+    const total = runtimeSplit.node + runtimeSplit.python;
+    if (total <= 0) return "conic-gradient(#1f2937 0 100%)";
     const n = (runtimeSplit.node / total) * 100;
-    const p = 100 - n;
     return `conic-gradient(#60a5fa 0 ${n}%, #22c55e ${n}% 100%)`;
   }, [runtimeSplit]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      {loading && (
+        <div className="overlay-loader">
+          <div className="spinner" />
+          <div className="text-sm text-slate-100">Loading dashboard...</div>
+        </div>
+      )}
+
       <header className="bg-[var(--primary)] text-white shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -94,6 +101,7 @@ export default function DashboardPage() {
               type="button"
               onClick={handleBack}
               className="rounded-full bg-white/15 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/25"
+              aria-label="뒤로가기"
             >
               ←
             </button>
@@ -137,6 +145,7 @@ export default function DashboardPage() {
             footer={`${snapshot.change > 0 ? "+" : ""}${snapshot.change}% vs last period`}
             icon="📈"
             tone="blue"
+            loading={loading}
           />
           <MetricCard
             title="Success Rate"
@@ -144,6 +153,7 @@ export default function DashboardPage() {
             footer={`${Math.round((snapshot.successRate / 100) * snapshot.totalInvocations)} successful`}
             icon="✅"
             tone="green"
+            loading={loading}
           />
           <MetricCard
             title="Avg Response Time"
@@ -151,6 +161,7 @@ export default function DashboardPage() {
             footer={`P95: ${snapshot.p95Ms}ms`}
             icon="⚡"
             tone="purple"
+            loading={loading}
           />
           <MetricCard
             title="System Health"
@@ -158,40 +169,47 @@ export default function DashboardPage() {
             footer={snapshot.health > 75 ? "Healthy" : snapshot.health > 50 ? "Warning" : "Critical"}
             icon="❤️"
             tone="red"
+            loading={loading}
           />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-4">
           <div className="lg:col-span-2 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">Invocations Over Time</h3>
               <span className="text-xs text-slate-400">Success vs Error</span>
             </div>
             <div className="h-56 rounded-lg border border-slate-800 bg-slate-950 px-3 py-4">
-              <div className="flex h-full items-end gap-2">
-                {series.map((pt) => {
-                  const total = pt.success + pt.error || 1;
-                  const successHeight = (pt.success / total) * 100;
-                  const errorHeight = (pt.error / total) * 100;
-                  return (
-                    <div key={pt.label} className="flex w-full flex-col justify-end gap-1 text-xs text-slate-400">
-                      <div className="flex h-36 items-end gap-1">
-                        <div
-                          className="w-2 rounded-sm bg-emerald-400"
-                          style={{ height: `${successHeight}%` }}
-                          title={`Success: ${pt.success}`}
-                        />
-                        <div
-                          className="w-2 rounded-sm bg-rose-400"
-                          style={{ height: `${errorHeight}%` }}
-                          title={`Error: ${pt.error}`}
-                        />
+              {series.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                  데이터가 없습니다. 연동 후 확인해 주세요.
+                </div>
+              ) : (
+                <div className="flex h-full items-end gap-2">
+                  {series.map((pt) => {
+                    const total = pt.success + pt.error || 1;
+                    const successHeight = (pt.success / total) * 100;
+                    const errorHeight = (pt.error / total) * 100;
+                    return (
+                      <div key={pt.label} className="flex w-full flex-col justify-end gap-1 text-xs text-slate-400">
+                        <div className="flex h-36 items-end gap-1">
+                          <div
+                            className="w-2 rounded-sm bg-emerald-400"
+                            style={{ height: `${successHeight}%` }}
+                            title={`Success: ${pt.success}`}
+                          />
+                          <div
+                            className="w-2 rounded-sm bg-rose-400"
+                            style={{ height: `${errorHeight}%` }}
+                            title={`Error: ${pt.error}`}
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-500">{pt.label}</span>
                       </div>
-                      <span className="text-[10px] text-slate-500">{pt.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -211,19 +229,51 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">Activity Feed</h3>
+              <span className="flex items-center gap-2 text-xs text-emerald-300">
+                <span className="pulse-glow inline-block h-2 w-2 rounded-full bg-emerald-400" />
+                Live
+              </span>
+            </div>
+            <div className="space-y-2 text-xs text-slate-200">
+              {activities.length === 0 ? (
+                <div className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-slate-500">
+                  활동이 없습니다. 연동 후 확인해 주세요.
+                </div>
+              ) : (
+                activities.slice(0, 8).map((act) => (
+                  <div key={act.id} className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">
+                        {act.type === "create" && "✨ 생성"}
+                        {act.type === "delete" && "🗑 삭제"}
+                        {act.type === "execute" && "▶ 실행"}
+                        {act.type === "deploy" && "🚀 배포"}
+                      </span>
+                      <span className="text-[10px] text-slate-400">{act.at}</span>
+                    </div>
+                    <p className="mt-1 text-slate-300">{act.message}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg lg:col-span-2">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">System Resources</h3>
-              <span className="text-xs text-slate-400">Live</span>
+              <span className="text-xs text-slate-400">CPU / Memory / IO / Network</span>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <ResourceBar label="CPU Usage" value={48} />
-              <ResourceBar label="Memory Usage" value={62} />
-              <ResourceBar label="Disk IO" value={35} />
-              <ResourceBar label="Network" value={54} />
+              <ResourceBar label="CPU Usage" value={0} />
+              <ResourceBar label="Memory Usage" value={0} />
+              <ResourceBar label="Disk IO" value={0} />
+              <ResourceBar label="Network" value={0} />
             </div>
           </div>
 
@@ -232,16 +282,43 @@ export default function DashboardPage() {
               <h3 className="text-sm font-semibold text-white">Recent Errors</h3>
               <span className="text-xs text-slate-400">Last 10</span>
             </div>
-            <div className="space-y-3 text-xs text-slate-300">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-rose-300">Error {i + 1}</span>
-                    <span className="text-[10px] text-slate-500">{new Date().toLocaleTimeString()}</span>
+            <div className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-400 space-y-2">
+              {executions.length === 0 ? (
+                <div className="text-slate-500">데이터가 없습니다. 연동 후 확인해 주세요.</div>
+              ) : (
+                executions.slice(0, 10).map((ex) => (
+                  <div key={ex.id} className="flex items-center justify-between">
+                    <span className={ex.status === "SUCCESS" ? "text-emerald-300" : "text-rose-300"}>
+                      {ex.status}
+                    </span>
+                    <span className="text-slate-300">{ex.durationMs} ms</span>
+                    <span className="text-[10px] text-slate-500">{new Date(ex.createdAt).toLocaleTimeString()}</span>
                   </div>
-                  <p className="mt-1 text-slate-400">Timeout on function exec-{i + 10}</p>
-                </div>
-              ))}
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">Terminal Viewer</h3>
+              <span className="text-xs text-slate-400">Live logs</span>
+            </div>
+            <div className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-200 font-mono leading-relaxed">
+              <div className="mb-2 flex items-center gap-1 text-[10px] text-slate-400">
+                <span className="h-2 w-2 rounded-full bg-red-400" />
+                <span className="h-2 w-2 rounded-full bg-amber-400" />
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              </div>
+              <div className="space-y-1">
+                {terminalLines.length === 0 ? (
+                  <div className="text-slate-500">로그가 없습니다.</div>
+                ) : (
+                  terminalLines.map((line) => <div key={line.id}>{line.text}</div>)
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -256,12 +333,14 @@ function MetricCard({
   footer,
   icon,
   tone,
+  loading,
 }: {
   title: string;
   value: string;
   footer: string;
   icon: string;
   tone: "blue" | "green" | "purple" | "red";
+  loading?: boolean;
 }) {
   const toneMap = {
     blue: "bg-blue-500/15 text-blue-300",
@@ -270,12 +349,18 @@ function MetricCard({
     red: "bg-rose-500/15 text-rose-300",
   } as const;
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg">
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">{title}</p>
-          <p className="mt-2 text-3xl font-semibold text-white">{value}</p>
-          <p className="mt-1 text-xs text-slate-400">{footer}</p>
+          {loading ? (
+            <div className="mt-3 h-7 w-24 rounded shimmer" />
+          ) : (
+            <>
+              <p className="mt-2 text-3xl font-semibold text-white">{value}</p>
+              <p className="mt-1 text-xs text-slate-400">{footer}</p>
+            </>
+          )}
         </div>
         <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${toneMap[tone]}`}>{icon}</div>
       </div>
