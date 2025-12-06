@@ -53,6 +53,10 @@ export async function listFunctions(
   return {
     items: normalized,
     message: json.message,
+    // Backward compatibility for existing UI (page/pageSize/total)
+    total: normalized.length,
+    page: 1,
+    pageSize: normalized.length,
   };
 }
 

@@ -19,6 +19,10 @@ export type ListFunctionsParams = {
 export type ListFunctionsResult = {
   items: FunctionListItem[];
   message?: string;
+  // For backward compatibility with old pagination UI
+  total?: number;
+  page?: number;
+  pageSize?: number;
 };
 
 export type DeleteFunctionParams = {
