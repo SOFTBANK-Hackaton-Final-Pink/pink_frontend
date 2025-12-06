@@ -26,8 +26,8 @@ export default function HomePage() {
       setError(null);
       const res = await listFunctions(params);
       setFunctions(res.items);
-      setTotal(res.total);
-      setPage(res.page);
+      setTotal(res.total ?? res.items.length);
+      setPage(res.page ?? 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "불러오기 오류가 발생했습니다");
     } finally {
