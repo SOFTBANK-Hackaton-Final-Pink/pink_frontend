@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import FunctionForm from "@/components/forms/FunctionForm";
 import FunctionList from "@/components/lists/FunctionList";
 import { createFunction, listFunctions, type ListFunctionsParams } from "@/lib/api";
@@ -13,14 +12,13 @@ import { Button } from "@/components/ui/button";
 const PAGE_SIZE = 10;
 
 export default function HomePage() {
-  const router = useRouter();
   const [functions, setFunctions] = useState<FunctionListItem[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadFunctions = async (params: ListFunctionsParams) => {
+  const loadFunctions = async (params: ListFunctionsParams = {}) => {
     try {
       setLoading(true);
       setError(null);
@@ -36,12 +34,12 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    loadFunctions({ page: 1, pageSize: PAGE_SIZE });
+    loadFunctions({});
   }, []);
 
   const handleCreate = async (payload: { name: string; runtime: string; code: string }) => {
     await createFunction(payload);
-    await loadFunctions({ page: 1, pageSize: PAGE_SIZE });
+    await loadFunctions({});
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -49,7 +47,7 @@ export default function HomePage() {
   const handleDeleted = async (id: string) => {
     setFunctions((prev) => prev.filter((fn) => fn.functionId !== id));
     setTotal((prev) => Math.max(0, prev - 1));
-    await loadFunctions({ page: 1, pageSize: PAGE_SIZE });
+    await loadFunctions({});
   };
 
   return (
@@ -67,7 +65,7 @@ export default function HomePage() {
               href="/dashboard"
               className="flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/25"
             >
-              <span aria-hidden="true">▦</span>
+              <span aria-hidden="true">📊</span>
               Dashboard
             </Link>
             <span className="text-xs opacity-85">SoftBank Hackathon · Prod</span>
@@ -77,8 +75,8 @@ export default function HomePage() {
 
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-6">
         <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--secondary)] px-4 py-3 text-[var(--foreground)]">
-          <h2 className="text-lg font-semibold">함수 생성</h2>
-          <p className="text-sm text-[var(--muted-foreground)]">함수 정보를 입력하고 코드를 등록하세요.</p>
+          <h2 className="text-lg font-semibold">함수 개요</h2>
+          <p className="text-sm text-[var(--muted-foreground)]">함수 생성/목록/삭제를 관리합니다.</p>
         </section>
 
         <Card className="p-6">
@@ -94,7 +92,7 @@ export default function HomePage() {
 
         <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--secondary)] px-4 py-3 text-[var(--foreground)]">
           <h2 className="text-lg font-semibold">함수 목록</h2>
-          <p className="text-sm text-[var(--muted-foreground)]">함수를 선택해 상세 정보와 실행 기록을 확인하세요.</p>
+          <p className="text-sm text-[var(--muted-foreground)]">함수를 선택해 상세/실행 기록을 확인하세요.</p>
         </section>
 
         <Card className="p-6">
@@ -114,7 +112,7 @@ export default function HomePage() {
               variant="secondary"
               size="sm"
               disabled={page === 1 || loading}
-              onClick={() => loadFunctions({ page: Math.max(1, page - 1), pageSize: PAGE_SIZE })}
+              onClick={() => loadFunctions({})}
             >
               이전
             </Button>
@@ -122,12 +120,7 @@ export default function HomePage() {
               variant="secondary"
               size="sm"
               disabled={page === totalPages || loading}
-              onClick={() =>
-                loadFunctions({
-                  page: Math.min(totalPages, page + 1),
-                  pageSize: PAGE_SIZE,
-                })
-              }
+              onClick={() => loadFunctions({})}
             >
               다음
             </Button>
