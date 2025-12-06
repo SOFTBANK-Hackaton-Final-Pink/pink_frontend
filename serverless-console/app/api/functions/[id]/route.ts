@@ -12,23 +12,6 @@ export async function GET(
   const store = getStore();
   let fn = store.find((f) => f.functionId === id);
 
-  // If not found, seed a mock on-the-fly so overview always has data.
-  if (!fn && id) {
-    const now = new Date().toISOString();
-    fn = {
-      functionId: id,
-      name: `mock_function_${id}`,
-      runtime: "node:18-alpine",
-      latestVersion: 1,
-      code: `exports.handler = async (event) => {
-  const name = event?.name ?? "world";
-  return { message: "Hello ${name}" };
-};`,
-      createdAt: now,
-      updatedAt: now,
-    };
-    store.push(fn);
-  }
   if (!fn) {
     return NextResponse.json(
       { success: false, error: { code: "NOT_FOUND", message: "Function not found" } },

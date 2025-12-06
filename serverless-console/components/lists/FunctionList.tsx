@@ -1,9 +1,9 @@
 'use client';
 
-import type { FunctionListItem } from "@/lib/types";
-import Link from "next/link";
-import { deleteFunction } from "@/lib/api";
 import { useState } from "react";
+import Link from "next/link";
+import type { FunctionListItem } from "@/lib/types";
+import { deleteFunction } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,15 +49,15 @@ export default function FunctionList({ items, loading, onDelete }: Props) {
               </Link>
               <div className="space-y-1 text-xs text-slate-600">
                 <div className="flex justify-between">
-                  <span>런타임:</span>
+                  <span>런타임</span>
                   <span>{fn.runtime}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>버전:</span>
+                  <span>버전</span>
                   <span>v{fn.latestVersion}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>업데이트:</span>
+                  <span>업데이트</span>
                   <span>{fn.updatedAt ? new Date(fn.updatedAt).toLocaleString() : "-"}</span>
                 </div>
               </div>
