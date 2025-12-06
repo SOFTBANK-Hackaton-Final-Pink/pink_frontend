@@ -27,7 +27,7 @@ export default function HomePage() {
       setTotal(res.total ?? res.items.length);
       setPage(res.page ?? 1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "불러오기 오류가 발생했습니다");
+      setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ export default function HomePage() {
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-6">
         <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--secondary)] px-4 py-3 text-[var(--foreground)]">
           <h2 className="text-lg font-semibold">함수 개요</h2>
-          <p className="text-sm text-[var(--muted-foreground)]">함수 생성/목록/삭제를 관리합니다.</p>
+          <p className="text-sm text-[var(--muted-foreground)]">함수 생성·목록·삭제를 관리합니다.</p>
         </section>
 
         <Card className="p-6">
