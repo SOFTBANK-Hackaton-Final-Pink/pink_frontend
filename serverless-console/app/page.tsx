@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const PAGE_SIZE = 10;
+const MIN_LOADING_MS = 1500;
 
 export default function HomePage() {
   const [functions, setFunctions] = useState<FunctionListItem[]>([]);
@@ -16,10 +17,14 @@ export default function HomePage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const page = cursorStack.length;
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+  const [loadingKind, setLoadingKind] = useState<"create" | "load">("load");
   const [error, setError] = useState<string | null>(null);
 
   const loadFunctions = async (params: ListFunctionsParams = {}) => {
+    const started = Date.now();
     try {
+      setLoadingKind("load");
       setLoading(true);
       setError(null);
       const res = await listFunctions(params);
@@ -28,7 +33,12 @@ export default function HomePage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
+      const elapsed = Date.now() - started;
+      if (elapsed < MIN_LOADING_MS) {
+        await new Promise((res) => setTimeout(res, MIN_LOADING_MS - elapsed));
+      }
       setLoading(false);
+      setLoadingMessage(null);
     }
   };
 
@@ -37,9 +47,23 @@ export default function HomePage() {
   }, []);
 
   const handleCreate = async (payload: { name: string; runtime: string; code: string }) => {
-    await createFunction(payload);
-    // 새로고침 (현 페이지 기준)
-    await loadFunctions({ cursor: cursorStack[cursorStack.length - 1] ?? undefined });
+    const started = Date.now();
+    try {
+      setLoadingKind("create");
+      setLoading(true);
+      setLoadingMessage("새 함수를 만드는 중입니다...");
+      await createFunction(payload);
+      await loadFunctions({ cursor: cursorStack[cursorStack.length - 1] ?? undefined });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "생성에 실패했습니다");
+    } finally {
+      const elapsed = Date.now() - started;
+      if (elapsed < MIN_LOADING_MS) {
+        await new Promise((res) => setTimeout(res, MIN_LOADING_MS - elapsed));
+      }
+      setLoading(false);
+      setLoadingMessage(null);
+    }
   };
 
   const handleDeleted = async (id: string) => {
@@ -67,8 +91,30 @@ export default function HomePage() {
     <div className="relative min-h-screen text-[var(--foreground)]">
       {loading && (
         <div className="overlay-loader">
-          <div className="spinner" />
-          <div className="text-sm">불러오는 중...</div>
+          <div className="loading-visual">
+            <img
+              src={loadingKind === "create" ? "/loading/create.gif" : "/loading/loading.gif"}
+              alt="loading"
+              className="h-28 w-28 object-contain"
+            />
+          </div>
+          <div className="w-full max-w-[320px] rounded-full bg-white/40 h-2 overflow-hidden shadow-inner">
+            <div
+              className="h-full bg-gradient-to-r from-[#ff6b9d] via-[#ff9f9f] to-[#ffd9a3] animate-[obentoProgress_1.5s_linear_infinite]"
+              style={{ animationDuration: `${Math.max(MIN_LOADING_MS, 1500)}ms` }}
+            />
+          </div>
+          <div className="text-sm mt-2">{loadingMessage ?? "불러오는 중..."}</div>
+          <style jsx>{`
+            @keyframes obentoProgress {
+              0% {
+                transform: translateX(-100%);
+              }
+              100% {
+                transform: translateX(100%);
+              }
+            }
+          `}</style>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getFunctionDetail, deleteFunction, invokeFunction, updateFunctionCode } from "@/lib/api";
 import type { FunctionDetail, ExecutionRow } from "@/lib/types";
@@ -17,12 +17,19 @@ function StatusBadge({ status }: { status: ExecutionRow["status"] }) {
 }
 
 const tabs = [
-  { key: "code", label: "코드 편집기" },
-  { key: "history", label: "실행 기록" },
-  { key: "metrics", label: "메트릭" },
+  { key: 'code', label: '코드 편집기' },
+  { key: 'history', label: '실행 기록' },
+  { key: 'metrics', label: '메트릭' },
 ] as const;
 
-const formatDate = (value?: string) => (value ? new Date(value).toLocaleString() : "-");
+const toKstString = (value?: string) => {
+  if (!value) return "-";
+  const d = new Date(value);
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toLocaleString();
+};
+
+const formatDate = toKstString;
 
 const maskId = (id: string | undefined) => {
   if (!id) return "";
@@ -44,7 +51,24 @@ export default function FunctionDetailPage() {
   const [execNextCursor, setExecNextCursor] = useState<string | null>(null);
   const [savingCode, setSavingCode] = useState(false);
   const [invoking, setInvoking] = useState(false);
-  const MIN_INVOKE_MS = 800;
+  const MIN_INVOKE_MS = 1500;
+  const RESULT_DURATION_MS = 10000;
+  const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearResultTimer = () => {
+    if (resultTimer.current) {
+      clearTimeout(resultTimer.current);
+      resultTimer.current = null;
+    }
+  };
+
+  const showResult = (msg: string) => {
+    clearResultTimer();
+    setInvokeResult(msg);
+    resultTimer.current = setTimeout(() => {
+      setInvokeResult(null);
+    }, RESULT_DURATION_MS);
+  };
 
   const fetchDetail = async () => {
     setLoading(true);
@@ -72,6 +96,9 @@ export default function FunctionDetailPage() {
     setExecCursor(null);
     setExecNextCursor(null);
     fetchDetail();
+    return () => {
+      clearResultTimer();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
@@ -86,10 +113,10 @@ export default function FunctionDetailPage() {
     const start = Date.now();
     try {
       const res = await invokeFunction(params.id);
-      setInvokeResult(`executionId: ${res.data.executionId}, status: ${res.data.status}`);
+      showResult(`요청을 접수했습니다. executionId: ${res.data.executionId} (상태: ${res.data.status})`);
       await refreshExecutions();
     } catch (err) {
-      setInvokeResult(err instanceof Error ? err.message : "실행 요청 실패");
+      showResult(err instanceof Error ? err.message : "실행 요청 실패");
     } finally {
       const elapsed = Date.now() - start;
       if (elapsed < MIN_INVOKE_MS) {
@@ -154,8 +181,27 @@ export default function FunctionDetailPage() {
       )}
       {loading && (
         <div className="overlay-loader">
-          <div className="spinner" />
-          <div className="text-sm text-white">로딩 중...</div>
+          <div className="loading-visual">
+            <div className="w-full max-w-[320px] rounded-full bg-white/40 h-2 overflow-hidden shadow-inner">
+              <div
+                className="h-full bg-gradient-to-r from-[#ff6b9d] via-[#ff9f9f] to-[#ffd9a3] animate-[obentoProgress_1.5s_linear_infinite]"
+                style={{ animationDuration: `${Math.max(MIN_INVOKE_MS, 1500)}ms` }}
+              />
+            </div>
+          </div>
+          <div className="text-sm text-[var(--foreground)]">
+            {invoking ? "코드를 실행하는 중입니다..." : "불러오는 중..."}
+          </div>
+          <style jsx>{`
+            @keyframes obentoProgress {
+              0% {
+                transform: translateX(-100%);
+              }
+              100% {
+                transform: translateX(100%);
+              }
+            }
+          `}</style>
         </div>
       )}
       <header className="mb-4 flex items-center justify-between rounded-[20px] bg-gradient-to-r from-[#ff6b9d] to-[#ff9f9f] px-5 py-3 text-white shadow-lg">
@@ -261,7 +307,8 @@ export default function FunctionDetailPage() {
                 </span>
               )}
               {invokeResult && (
-                <div className="rounded-md border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-sm text-[var(--foreground)]">
+                <div className="flex items-center gap-2 rounded-md border border-[#d8d8d8] bg-white/80 px-3 py-2 text-sm text-[var(--foreground)]">
+                  <span className="rounded-full bg-[#f1c40f] px-2 py-0.5 text-xs font-semibold text-black">PENDING</span>
                   {invokeResult}
                 </div>
               )}
@@ -290,7 +337,6 @@ export default function FunctionDetailPage() {
                         <th className="pb-2 pr-3">CPU %</th>
                         <th className="pb-2 pr-3">메모리(MB)</th>
                         <th className="pb-2 pr-3">실행 시간</th>
-                        <th className="pb-2 pr-3">입력</th>
                         <th className="pb-2 pr-3">출력</th>
                         <th className="pb-2 pr-3">에러</th>
                         <th className="pb-2 pr-3 whitespace-nowrap">시간</th>
@@ -313,9 +359,6 @@ export default function FunctionDetailPage() {
                             </td>
                             <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
                               {exec.executionResult?.durationMs ?? "-"} ms
-                            </td>
-                            <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
-                              {exec.executionResult?.input ?? "-"}
                             </td>
                             <td className="py-2 pr-3 text-xs text-[var(--muted-foreground)]">
                               {exec.executionResult?.output ?? "-"}
@@ -373,13 +416,13 @@ export default function FunctionDetailPage() {
               <Card className="p-4">
                 <div className="text-xs text-[var(--muted-foreground)]">평균 CPU</div>
                 <div className="text-lg font-semibold">
-                  {avgCpu !== null ? `${avgCpu}%` : "-"}
+                  {avgCpu !== null ? `${avgCpu.toFixed(3)}%` : "-"}
                 </div>
               </Card>
               <Card className="p-4">
                 <div className="text-xs text-[var(--muted-foreground)]">평균 메모리</div>
                 <div className="text-lg font-semibold">
-                  {avgMem !== null ? `${avgMem} MB` : "-"}
+                  {avgMem !== null ? `${avgMem.toFixed(3)} MB` : "-"}
                 </div>
               </Card>
             </div>
