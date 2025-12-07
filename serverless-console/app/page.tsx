@@ -21,10 +21,10 @@ export default function HomePage() {
   const [loadingKind, setLoadingKind] = useState<"create" | "load">("load");
   const [error, setError] = useState<string | null>(null);
 
-  const loadFunctions = async (params: ListFunctionsParams = {}) => {
+  const loadFunctions = async (params: ListFunctionsParams = {}, kind: "create" | "load" = "load") => {
     const started = Date.now();
     try {
-      setLoadingKind("load");
+      setLoadingKind(kind);
       setLoading(true);
       setError(null);
       const res = await listFunctions(params);
@@ -53,7 +53,7 @@ export default function HomePage() {
       setLoading(true);
       setLoadingMessage("새 함수를 만드는 중입니다...");
       await createFunction(payload);
-      await loadFunctions({ cursor: cursorStack[cursorStack.length - 1] ?? undefined });
+      await loadFunctions({ cursor: cursorStack[cursorStack.length - 1] ?? undefined }, "create");
     } catch (err) {
       setError(err instanceof Error ? err.message : "생성에 실패했습니다");
     } finally {
@@ -67,8 +67,8 @@ export default function HomePage() {
   };
 
   const handleDeleted = async (id: string) => {
+    // 삭제 시 추가 로딩 없이 로컬 목록만 즉시 반영
     setFunctions((prev) => prev.filter((fn) => fn.functionId !== id));
-    await loadFunctions({ cursor: cursorStack[cursorStack.length - 1] ?? undefined });
   };
 
   const handleNext = async () => {

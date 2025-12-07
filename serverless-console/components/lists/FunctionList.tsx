@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from "react";
 import Link from "next/link";
 import type { FunctionListItem } from "@/lib/types";
 import { deleteFunction } from "@/lib/api";
@@ -21,8 +20,6 @@ const maskId = (id: string) => {
 };
 
 export default function FunctionList({ items, loading, onDelete }: Props) {
-  const [busyId, setBusyId] = useState<string | null>(null);
-
   if (loading) {
     return (
       <div className="overlay-loader">
@@ -55,13 +52,9 @@ export default function FunctionList({ items, loading, onDelete }: Props) {
   }
 
   const handleDelete = async (id: string) => {
-    setBusyId(id);
-    try {
-      await deleteFunction(id);
-      await onDelete?.(id);
-    } finally {
-      setBusyId(null);
-    }
+    // 삭제 시 별도 로딩 오버레이 없이 즉시 처리
+    await deleteFunction(id);
+    await onDelete?.(id);
   };
 
   return (
@@ -106,7 +99,6 @@ export default function FunctionList({ items, loading, onDelete }: Props) {
                 variant="danger"
                 size="sm"
                 onClick={() => handleDelete(fn.functionId)}
-                disabled={busyId === fn.functionId}
                 aria-label="함수 삭제"
               >
                 삭제
