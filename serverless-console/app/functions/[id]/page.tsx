@@ -51,7 +51,7 @@ export default function FunctionDetailPage() {
   const [execNextCursor, setExecNextCursor] = useState<string | null>(null);
   const [savingCode, setSavingCode] = useState(false);
   const [invoking, setInvoking] = useState(false);
-  const MIN_INVOKE_MS = 1500;
+  const MIN_INVOKE_MS = 2000;
   const RESULT_DURATION_MS = 10000;
   const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -71,6 +71,7 @@ export default function FunctionDetailPage() {
   };
 
   const fetchDetail = async () => {
+    const started = Date.now();
     setLoading(true);
     try {
       setError(null);
@@ -82,14 +83,25 @@ export default function FunctionDetailPage() {
       setError(err instanceof Error ? err.message : "불러오기 오류가 발생했습니다.");
       setDetail(null);
     } finally {
+      const elapsed = Date.now() - started;
+      if (elapsed < MIN_INVOKE_MS) {
+        await new Promise((res) => setTimeout(res, MIN_INVOKE_MS - elapsed));
+      }
       setLoading(false);
     }
   };
 
   const refreshExecutions = async () => {
+    const started = Date.now();
+    setLoading(true);
     setExecCursor(null);
     setExecNextCursor(null);
     await fetchDetail();
+    const elapsed = Date.now() - started;
+    if (elapsed < MIN_INVOKE_MS) {
+      await new Promise((res) => setTimeout(res, MIN_INVOKE_MS - elapsed));
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -182,10 +194,17 @@ export default function FunctionDetailPage() {
       {loading && (
         <div className="overlay-loader">
           <div className="loading-visual">
-            <div className="w-full max-w-[320px] rounded-full bg-white/40 h-2 overflow-hidden shadow-inner">
+            <img
+              src={invoking ? "/loading/start.gif" : "/loading/loading.gif"}
+              alt="loading"
+              className="h-20 w-20 object-contain"
+            />
+          </div>
+          <div className="loading-visual w-full">
+            <div className="w-full max-w-[320px] mx-auto rounded-full bg-white/50 h-2 overflow-hidden shadow-inner">
               <div
-                className="h-full bg-gradient-to-r from-[#ff6b9d] via-[#ff9f9f] to-[#ffd9a3] animate-[obentoProgress_1.5s_linear_infinite]"
-                style={{ animationDuration: `${Math.max(MIN_INVOKE_MS, 1500)}ms` }}
+                className="h-full bg-gradient-to-r from-[#ff6b9d] via-[#ff9f9f] to-[#ffd9a3] animate-[obentoProgress_2s_linear_infinite]"
+                style={{ animationDuration: `${Math.max(MIN_INVOKE_MS, 2000)}ms` }}
               />
             </div>
           </div>
